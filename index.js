@@ -97,9 +97,9 @@ async function run() {
 run().catch(console.dir);
 
 app.get('/', (req, res) => {
-  res.send('Ecommerce server is running');
+  res.send('mernEcommerce server is running');
 });
 
 app.listen(port, () => {
-  console.log(`Ecommerce server is running on: ${port}`);
+  console.log(`mernEcommerce server is running on: ${port}`);
 });
