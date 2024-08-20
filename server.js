@@ -32,26 +32,35 @@ async function run() {
 
     // Implementing pagination in the /products route
     app.get('/products', async (req, res) => {
-      const { page = 1, limit = 10 } = req.query;  // Default values are page 1 and limit 10
-      const pageNumber = parseInt(page);
-      const pageSize = parseInt(limit);
-
-      const cursor = mernCollection.find()
-        .skip((pageNumber - 1) * pageSize) // Skip the documents for previous pages
-        .limit(pageSize); // Limit the number of documents per page
-      
-      const result = await cursor.toArray();
-
-      // Getting the total number of products for pagination
-      const totalProducts = await mernCollection.countDocuments();
-
-      res.send({
-        products: result,
-        totalProducts,
-        totalPages: Math.ceil(totalProducts / pageSize),
-        currentPage: pageNumber
-      });
+        const { page = 1, limit = 10, search = "" } = req.query;
+    
+        try {
+            // Build search query
+            const query = search ? { name: { $regex: search, $options: 'i' } } : {};
+            console.log("Query:", query);
+    
+            // Fetch products with pagination and search filtering
+            const products = await mernCollection.find(query)
+                .limit(parseInt(limit)) // Ensure limit is an integer
+                .skip((parseInt(page) - 1) * parseInt(limit)) // Ensure page and limit are integers
+                .toArray();
+    
+            // Count the total number of products that match the query
+            const count = await mernCollection.countDocuments(query);
+            console.log("Count:", count);
+    
+            // Respond with the products and pagination info
+            res.json({
+                products,
+                totalPages: Math.ceil(count / parseInt(limit)), // Ensure limit is an integer
+                currentPage: parseInt(page),
+            });
+        } catch (err) {
+            console.error("Error fetching products:", err);
+            res.status(500).json({ message: err.message });
+        }
     });
+    
 
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
