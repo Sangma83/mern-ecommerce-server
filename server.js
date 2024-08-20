@@ -27,7 +27,7 @@ async function run() {
     const mernCollection = client.db('mernEcommerce').collection('products');
 
     app.get('/products', async (req, res) => {
-      const { page = 1, limit = 10, search = '', category = '', priceRange = '' } = req.query;
+      const { page = 1, limit = 10, search = '', category = '', priceRange = '', sort = 'priceAsc' } = req.query;
 
       // Build query filters
       let query = {};
@@ -49,9 +49,26 @@ async function run() {
         }
       }
 
+      // Determine sorting
+      let sortQuery = {};
+      switch (sort) {
+        case 'priceAsc':
+          sortQuery.price = 1;
+          break;
+        case 'priceDesc':
+          sortQuery.price = -1;
+          break;
+        case 'dateAdded':
+          sortQuery.dateAdded = -1;
+          break;
+        default:
+          sortQuery.price = 1; // Default to price ascending
+      }
+
       try {
-        // Fetch products with pagination
+        // Fetch products with pagination and sorting
         const products = await mernCollection.find(query)
+          .sort(sortQuery)
           .limit(parseInt(limit))
           .skip((parseInt(page) - 1) * parseInt(limit))
           .toArray();
