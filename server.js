@@ -42,7 +42,7 @@ async function run() {
 
       if (priceRange) {
         const [min, max] = priceRange.split('-').map(Number);
-        if (!isNaN(min) && !isNaN(max)) { // Ensure min and max are valid numbers
+        if (!isNaN(min) && !isNaN(max)) { 
           query.price = { $gte: min, $lte: max };
         } else {
           return res.status(400).json({ message: 'Invalid price range format' });
