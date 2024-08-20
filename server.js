@@ -1,20 +1,19 @@
 const express = require('express');
-const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+const { MongoClient, ServerApiVersion } = require('mongodb');
 require('dotenv').config();
 const cors = require('cors');
 const app = express();
 const port = process.env.PORT || 5000;
 
 // Middleware
-app.use(cors({ 
+app.use(cors({
   origin: ['http://localhost:5173'],
-  credentials: true, 
+  credentials: true,
 }));
 app.use(express.json());
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.4xueldm.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
-// Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
   serverApi: {
     version: ServerApiVersion.v1,
@@ -25,42 +24,51 @@ const client = new MongoClient(uri, {
 
 async function run() {
   try {
-    // Connect the client to the server
-    // await client.connect();
-
     const mernCollection = client.db('mernEcommerce').collection('products');
 
-    // Implementing pagination in the /products route
     app.get('/products', async (req, res) => {
-        const { page = 1, limit = 10, search = "" } = req.query;
-    
-        try {
-            // Build search query
-            const query = search ? { name: { $regex: search, $options: 'i' } } : {};
-            console.log("Query:", query);
-    
-            // Fetch products with pagination and search filtering
-            const products = await mernCollection.find(query)
-                .limit(parseInt(limit)) // Ensure limit is an integer
-                .skip((parseInt(page) - 1) * parseInt(limit)) // Ensure page and limit are integers
-                .toArray();
-    
-            // Count the total number of products that match the query
-            const count = await mernCollection.countDocuments(query);
-            console.log("Count:", count);
-    
-            // Respond with the products and pagination info
-            res.json({
-                products,
-                totalPages: Math.ceil(count / parseInt(limit)), // Ensure limit is an integer
-                currentPage: parseInt(page),
-            });
-        } catch (err) {
-            console.error("Error fetching products:", err);
-            res.status(500).json({ message: err.message });
+      const { page = 1, limit = 10, search = '', category = '', priceRange = '' } = req.query;
+
+      // Build query filters
+      let query = {};
+      
+      if (search) {
+        query.name = { $regex: search, $options: 'i' };
+      }
+
+      if (category) {
+        query.category = category;
+      }
+
+      if (priceRange) {
+        const [min, max] = priceRange.split('-').map(Number);
+        if (!isNaN(min) && !isNaN(max)) { // Ensure min and max are valid numbers
+          query.price = { $gte: min, $lte: max };
+        } else {
+          return res.status(400).json({ message: 'Invalid price range format' });
         }
+      }
+
+      try {
+        // Fetch products with pagination
+        const products = await mernCollection.find(query)
+          .limit(parseInt(limit))
+          .skip((parseInt(page) - 1) * parseInt(limit))
+          .toArray();
+
+        // Count the total number of products that match the query
+        const count = await mernCollection.countDocuments(query);
+
+        res.json({
+          products,
+          totalPages: Math.ceil(count / parseInt(limit)),
+          currentPage: parseInt(page),
+        });
+      } catch (err) {
+        console.error("Error fetching products:", err);
+        res.status(500).json({ message: err.message });
+      }
     });
-    
 
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
@@ -68,6 +76,7 @@ async function run() {
     // await client.close();
   }
 }
+
 run().catch(console.dir);
 
 app.get('/', (req, res) => {
@@ -77,146 +86,3 @@ app.get('/', (req, res) => {
 app.listen(port, () => {
   console.log(`Ecommerce server is running on: ${port}`);
 });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// async function run() {
-//   try {
-//     // Connect the client to the server	(optional starting in v4.7)
-//     await client.connect();
-//     // Send a ping to confirm a successful connection
-//     await client.db("admin").command({ ping: 1 });
-//     console.log("Pinged your deployment. You successfully connected to MongoDB!");
-//   } finally {
-//     // Ensures that the client will close when you finish/error
-//     await client.close();
-//   }
-// }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// const express = require('express');
-// const mongoose = require('mongoose');
-// const cors = require('cors');
-// const dotenv = require('dotenv');
-
-// dotenv.config();
-
-// const app = express();
-// const PORT = process.env.PORT || 5000;
-
-// // Middleware
-// app.use(cors());
-// app.use(express.json());
-
-// // Connect to MongoDB Atlas
-// mongoose.connect(process.env.MONGO_URI)
-//   .then(() => console.log('MongoDB connected'))
-//   .catch(err => console.error('MongoDB connection error:', err));
-
-// // Define a Product Schema
-// const productSchema = new mongoose.Schema({
-//     name: String,
-//     description: String,
-//     price: Number,
-//     ratings: Number,
-//     category: String,
-//     image: String,
-//     creationDate: { type: Date, default: Date.now } // Optional: Add creationDate field
-// });
-
-// // Create a Product Model
-// const Product = mongoose.model('Product', productSchema);
-
-// // API Routes
-// app.get('/products', async (req, res) => {
-//     const { page = 1, limit = 10, search = "" } = req.query;
-
-//     try {
-//         // Build search query
-//         const query = search ? { name: { $regex: search, $options: 'i' } } : {};
-//         console.log("Query:", query);
-
-//         // Fetch products with pagination
-//         const products = await Product.find(query)
-//             .limit(parseInt(limit)) // Ensure limit is an integer
-//             .skip((parseInt(page) - 1) * parseInt(limit)) // Ensure page and limit are integers
-//             .exec();
-//         console.log("Products:", products);
-
-//         // Count the total number of products that match the query
-//         const count = await Product.countDocuments(query);
-//         console.log("Count:", count);
-
-//         // Respond with the products and pagination info
-//         res.json({
-//             products,
-//             totalPages: Math.ceil(count / parseInt(limit)), // Ensure limit is an integer
-//             currentPage: parseInt(page),
-//         });
-//     } catch (err) {
-//         console.error("Error fetching products:", err);
-//         res.status(500).json({ message: err.message });
-//     }
-// });
-
-
-
-// // Start the server
-// app.listen(PORT, () => {
-//     console.log(`Server is running on port ${PORT}`);
-// });
