@@ -51,5 +51,5 @@ This project is a full-stack single-page web application built using the MERN st
 1. **Clone the repository:**
 
    ```bash
-   git clone https://github.com/Sangma83/mern-ecommerce-frnt.git
+   git clone https://github.com/Sangma83/mern-ecommerce-server.git
    cd your-repo-name
